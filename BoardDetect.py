@@ -16,7 +16,6 @@ while(True):
     _, frame = cap.read()
     roi_frame = frame.copy()
     cv2.rectangle(roi_frame, start_pt , end_pt , color=(0, 0, 255))
-    cv2.imshow("ROI", roi_frame)
     if not goodTracked:
         crop_frame = frame[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
         blur_frame = cv2.medianBlur(crop_frame, 7)
@@ -42,26 +41,27 @@ while(True):
         corners = corners.astype(np.int32)
         if corners.shape[1] == 1:
             corners = corners.squeeze(1)
-        corner_frame = crop_frame.copy()
-        for pt in corners:
-            cv2.circle(corner_frame, pt, 3, (3, 219, 252), thickness = -1)
+        # corner_frame = crop_frame.copy()
+        # for pt in corners:
+        #     cv2.circle(corner_frame, pt, 3, (3, 219, 252), thickness = -1)
         # cv2.imshow("corner_frame", corner_frame)
         selected_pts = getBetterChessCorners(corners=corners)
         if len(selected_pts) != 0:
-            select_pic = crop_frame.copy()
-            for pt in selected_pts:
-                cv2.circle(select_pic, pt, 3, (3, 219, 252), thickness = -1)
+            # select_pic = crop_frame.copy()
+            # for pt in selected_pts:
+            #     cv2.circle(select_pic, pt, 3, (3, 219, 252), thickness = -1)
             # 開始映射轉換
             project_point = np.array([[0, 0],[736, 0],[0, 736],[736, 736]])
             M = cv2.getPerspectiveTransform(selected_pts.astype(np.float32), project_point.astype(np.float32))
             result_img = cv2.warpPerspective(crop_frame, M, (736, 736))
-            if not goodTracked:
-                goodTracked = True
-                print("OK")
+            goodTracked = True
+    if goodTracked:
+        cv2.putText(roi_frame, "OK", org=(100, 100), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+    cv2.imshow("ROI", roi_frame)
     # 
     if cv2.waitKey(1) & 0xFF == ord('s'):
         if goodTracked:
-            cv2.imshow("select_pic", select_pic)
+            # cv2.imshow("select_pic", select_pic)
             cv2.imshow("final", result_img)
             goodTracked = False
         else:

@@ -2,21 +2,32 @@ import cv2
 import numpy as np
 from cvutills import *
 
+root = './procedure_img'
+ROI_SIDE_LENGTH = 600
+RESOLUTION = (1280, 720)
+N_FRAME = 1 # 每N禎 偵測一次
+
 cap = cv2.VideoCapture(0)
-ROI_SIDE_LENGTH = 400
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
 print(f'Res = {(width, height)}')
+
 start_pt = (int((width - ROI_SIDE_LENGTH) / 2), int((height - ROI_SIDE_LENGTH) / 2 ))
 end_pt = (int((width + ROI_SIDE_LENGTH) / 2), int((height + ROI_SIDE_LENGTH) / 2))
+
 goodTracked = False
+detectSignal = False
+current_frame = 0
+
 while(True):
     _, frame = cap.read()
     roi_frame = frame.copy()
+    
     cv2.rectangle(roi_frame, start_pt , end_pt , color=(0, 0, 255))
-    if not goodTracked:
+    if (not goodTracked) and detectSignal and (current_frame == 0):
         crop_frame = frame[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
         blur_frame = cv2.medianBlur(crop_frame, 7)
         # cv2.imshow('blur', blur_frame)
@@ -55,20 +66,31 @@ while(True):
             M = cv2.getPerspectiveTransform(selected_pts.astype(np.float32), project_point.astype(np.float32))
             result_img = cv2.warpPerspective(crop_frame, M, (736, 736))
             goodTracked = True
-    if goodTracked:
-        cv2.putText(roi_frame, "OK", org=(100, 100), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
-    cv2.imshow("ROI", roi_frame)
-    # 
-    if cv2.waitKey(1) & 0xFF == ord('s'):
-        if goodTracked:
-            # cv2.imshow("select_pic", select_pic)
-            cv2.imshow("final", result_img)
-            goodTracked = False
-        else:
-            print("請重新偵測")
     
+    if detectSignal:
+        cv2.putText(roi_frame, "Detecting...", org=(0, 25), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+    else:
+        cv2.putText(roi_frame, "Press D to Detect", org=(0, 25), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+    cv2.imshow("ROI", roi_frame)
+
+    # 偵測紐
+    if cv2.waitKey(1) & 0xFF == ord('d'):
+        detectSignal = not detectSignal
+        goodTracked = False
+
+    if goodTracked and detectSignal:
+        break
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+    current_frame = (current_frame + 1) % N_FRAME
+
 cap.release()
+cv2.destroyAllWindows()
+
+if goodTracked:
+    cv2.imshow("final", result_img)
+
+cv2.waitKey(0)
 cv2.destroyAllWindows()
 

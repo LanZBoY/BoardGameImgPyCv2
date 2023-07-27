@@ -1,0 +1,15 @@
+ROAD_TYPE_LIST = [
+    "UNKNOWN", 
+    "UNPROCESS", 
+    "START", 
+    "BLACK", 
+    "BLUE", 
+    "RED", 
+    "GREEN", 
+    "BLUE", 
+    "VERTICAL", 
+    "HORIZON", 
+    "UP_LEFT", 
+    "UP_RIGHT", 
+    "LEFT_DOWN", 
+    "RIGHT_DOWN"]

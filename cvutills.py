@@ -80,7 +80,37 @@ def add_trace_img(name : str, img : np.ndarray, TRACE_MODE = False, trace_imgs :
         return
     trace_imgs[name] = img
 
-def capture_roi(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SIDE_LENGTH = 600, res = (1280, 720)):
+def capture_roi(img : np.ndarray, ROI_SIDE_LENGTH = 600):
+    start_pt = (int((img.shape[1] - ROI_SIDE_LENGTH) / 2), int((img.shape[0] - ROI_SIDE_LENGTH) / 2 ))
+    end_pt = (int((img.shape[1] + ROI_SIDE_LENGTH) / 2), int((img.shape[1] + ROI_SIDE_LENGTH) / 2))
+    copy_img = img[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
+    process_img = cv2.medianBlur(copy_img, 7)
+    process_img : np.ndarray = cv2.cvtColor(process_img, cv2.COLOR_BGR2HSV_FULL)
+    process_img = cv2.cvtColor(process_img, cv2.COLOR_BGR2GRAY)
+    process_img = cv2.medianBlur(process_img, 7)
+    _, process_img = cv2.threshold(process_img, 0., 255., cv2.THRESH_OTSU)
+    process_img = cv2.Canny(process_img, 100, 200)
+    contours, _ = cv2.findContours(process_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
+    contour_img = np.zeros(shape=(process_img.shape[0], process_img.shape[1]), dtype = np.uint8)
+    maxidx = getMaxContourIndex(contours)
+    cv2.drawContours(contour_img, contours = contours, contourIdx = maxidx, color=255, thickness=1)
+    max_contour : np.ndarray = contours[maxidx]
+    if max_contour.shape[1] == 1:
+        max_contour = max_contour.squeeze(1)
+    corners : np.ndarray = cv2.goodFeaturesToTrack(contour_img, 30, 0.1, int(ROI_SIDE_LENGTH / 9), blockSize = 3)
+    if corners.shape[1] == 1:
+        corners = corners.squeeze(1)
+    corners = corners.astype(np.int32)
+    selected_pts = getBetterChessCorners(corners=corners)
+    # for pt in selected_pts:
+    #     cv2.circle(copy_img, pt, 3, (3, 219, 252), thickness = -1)
+    if len(selected_pts) != 0:
+        project_point = np.array([[0, 0],[723, 0],[0, 723],[723, 723]])
+        M = cv2.getPerspectiveTransform(selected_pts.astype(np.float32), project_point.astype(np.float32))
+        result_img = cv2.warpPerspective(copy_img, M, (723, 723))
+    return result_img
+
+def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SIDE_LENGTH = 600, res = (1280, 720)):
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, res[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, res[1])

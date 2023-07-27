@@ -25,7 +25,7 @@ SAVE_PATH = './procedure_img'
 TRACE_MODE = False
 ROI_SIDE_LENGTH = 600
 
-img, trace_imgs = capture_roi(TRACE_MODE, SAVE_PATH, ROI_SIDE_LENGTH, (1280, 720))
+img, trace_imgs = capture_roi_frame(TRACE_MODE, SAVE_PATH, ROI_SIDE_LENGTH, (1280, 720))
 
 gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 cv2.imshow('gray', gray_img)

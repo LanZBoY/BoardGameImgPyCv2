@@ -151,25 +151,20 @@ def capture_roi(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SIDE_LENG
                 add_trace_img("result", result_img, TRACE_MODE, trace_imgs)
                 goodTracked = True
         
-        if goodTracked:
-            cv2.putText(roi_frame, "OK", org=(100, 100), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+        if detectSignal:
+            cv2.putText(roi_frame, "Detecting...", org=(0, 25), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+        else:
+            cv2.putText(roi_frame, "Press D to Detect", org=(0, 25), fontFace= cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 255, 255), thickness = 3)
+
         cv2.imshow("ROI", roi_frame)
         # 
-        if cv2.waitKey(1) & 0xFF == ord('s'):
-            if goodTracked:
-                # cv2.imshow("select_pic", select_pic)
-                goodTracked = False
-                break
-            else:
-                print("請重新偵測")
 
         if cv2.waitKey(1) & 0xFF == ord('d'):
             detectSignal = not detectSignal
-            if detectSignal:
-                print("開始偵測")
-            else:
-                goodTracked = False
-                print("停止偵測")
+            goodTracked = False
+
+        if goodTracked:
+            break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

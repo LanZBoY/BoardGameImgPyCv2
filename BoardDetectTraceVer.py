@@ -3,8 +3,26 @@ import os
 import numpy as np
 from cvutills import *
 
+# road_type = {
+#         "UNKNOWN" : -3,
+#         "UN_PROCESS" : -2,
+#         "BLANK" : -1,
+#         "RED" : 0,
+#         "GREEN" : 1,
+#         "BLUE" : 2,
+#         "BLACK" : 3,
+#         "B_STRAIGHT_HORIZON" : 4,
+#         "B_STRAIGHT_VERTICAL" : 5,
+#         "B_UP_RIGHT" : 6,
+#         "B_LEFT_DOWN" : 7,
+#         "B_LEFT_UP" : 8,
+#         "B_DOWN_RIGHT" : 9
+#     }
+
+
+
 SAVE_PATH = './procedure_img'
-TRACE_MODE = True
+TRACE_MODE = False
 ROI_SIDE_LENGTH = 600
 
 img, trace_imgs = capture_roi(TRACE_MODE, SAVE_PATH, ROI_SIDE_LENGTH, (1280, 720))

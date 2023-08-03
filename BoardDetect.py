@@ -36,9 +36,9 @@ while(True):
         hsv_gray_frame = cv2.medianBlur(hsv_gray_frame, 7)
         # cv2.imshow('hsv_gray_frame', hsv_gray_frame)
         _, gray_otsu_frame = cv2.threshold(hsv_gray_frame, 0., 255., cv2.THRESH_OTSU)
-        # cv2.imshow("gray_otsu_frame", gray_otsu_frame)
+        cv2.imshow("gray_otsu_frame", gray_otsu_frame)
         canny_frame = cv2.Canny(gray_otsu_frame, 100, 200)
-        # cv2.imshow("Canny", canny_frame)
+        cv2.imshow("Canny", canny_frame)
         contours, _ = cv2.findContours(canny_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
         contour_frame = np.zeros(shape=(blur_frame.shape[0], blur_frame.shape[1]), dtype = np.uint8)
         maxidx = getMaxContourIndex(contours)
@@ -46,7 +46,7 @@ while(True):
         max_contour : np.ndarray = contours[maxidx]
         if max_contour.shape[1] == 1:
             max_contour = max_contour.squeeze(1)
-        # cv2.imshow("contour_frame", contour_frame)
+        cv2.imshow("contour_frame", contour_frame)
 
         corners : np.ndarray = cv2.goodFeaturesToTrack(contour_frame, 30, 0.1, int(ROI_SIDE_LENGTH / 9), blockSize = 3)
         corners = corners.astype(np.int32)

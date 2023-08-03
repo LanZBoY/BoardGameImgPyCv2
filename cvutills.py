@@ -80,12 +80,13 @@ def add_trace_img(name : str, img : np.ndarray, TRACE_MODE = False, trace_imgs :
         return
     trace_imgs[name] = img
 
-def capture_roi(img : np.ndarray, ROI_SIDE_LENGTH = 600):
+def capture_roi(img : np.ndarray, ROI_SIDE_LENGTH = 600, version : str = 'penguin'):
     start_pt = (int((img.shape[1] - ROI_SIDE_LENGTH) / 2), int((img.shape[0] - ROI_SIDE_LENGTH) / 2 ))
     end_pt = (int((img.shape[1] + ROI_SIDE_LENGTH) / 2), int((img.shape[1] + ROI_SIDE_LENGTH) / 2))
     copy_img = img[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
     process_img = cv2.medianBlur(copy_img, 7)
-    process_img : np.ndarray = cv2.cvtColor(process_img, cv2.COLOR_BGR2HSV_FULL)
+    if version == 'penguin':
+        process_img : np.ndarray = cv2.cvtColor(process_img, cv2.COLOR_BGR2HSV_FULL)
     process_img = cv2.cvtColor(process_img, cv2.COLOR_BGR2GRAY)
     process_img = cv2.medianBlur(process_img, 7)
     _, process_img = cv2.threshold(process_img, 0., 255., cv2.THRESH_OTSU)
@@ -110,7 +111,7 @@ def capture_roi(img : np.ndarray, ROI_SIDE_LENGTH = 600):
         result_img = cv2.warpPerspective(copy_img, M, (723, 723))
     return result_img
 
-def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SIDE_LENGTH = 600, res = (1280, 720)):
+def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SIDE_LENGTH = 600, res = (1280, 720), version : str = 'penguin'):
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, res[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, res[1])
@@ -118,8 +119,6 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     print(f'Res = {(width, height)}')
-
-
     start_pt = (int((width - ROI_SIDE_LENGTH) / 2), int((height - ROI_SIDE_LENGTH) / 2 ))
     end_pt = (int((width + ROI_SIDE_LENGTH) / 2), int((height + ROI_SIDE_LENGTH) / 2))
 
@@ -134,30 +133,29 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
             add_trace_img("input", frame, TRACE_MODE, trace_imgs)
             crop_frame = frame[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
             add_trace_img("crop", crop_frame, TRACE_MODE, trace_imgs)
-            blur_frame = cv2.medianBlur(crop_frame, 7)
-            # cv2.imshow('blur', blur_frame)
-            add_trace_img("blur", blur_frame, TRACE_MODE, trace_imgs)
-            hsv_frame : np.ndarray = cv2.cvtColor(blur_frame, cv2.COLOR_BGR2HSV_FULL)
-            add_trace_img("hsv", hsv_frame, TRACE_MODE, trace_imgs)
-            hsv_gray_frame = cv2.cvtColor(hsv_frame, cv2.COLOR_BGR2GRAY)
-            add_trace_img("hsv_gray", hsv_gray_frame, TRACE_MODE, trace_imgs)
-            hsv_gray_frame = cv2.medianBlur(hsv_gray_frame, 7)
-            add_trace_img("hsv_gray_median", hsv_gray_frame, TRACE_MODE, trace_imgs)
+            processed_frame = cv2.medianBlur(crop_frame, 7)
+            add_trace_img("blur", processed_frame, TRACE_MODE, trace_imgs)
+            if version == 'penguin':
+                processed_frame : np.ndarray = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2HSV_FULL)
+                add_trace_img("hsv", processed_frame, TRACE_MODE, trace_imgs)
+            processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2GRAY)
+            add_trace_img("hsv_gray", processed_frame, TRACE_MODE, trace_imgs)
+            processed_frame = cv2.medianBlur(processed_frame, 7)
+            add_trace_img("hsv_gray_median", processed_frame, TRACE_MODE, trace_imgs)
             # cv2.imshow('hsv_gray_frame', hsv_gray_frame)
-            _, gray_otsu_frame = cv2.threshold(hsv_gray_frame, 0., 255., cv2.THRESH_OTSU)
-            add_trace_img("gray_otsu", gray_otsu_frame, TRACE_MODE, trace_imgs)
-            # cv2.imshow("gray_otsu_frame", gray_otsu_frame)
-            canny_frame = cv2.Canny(gray_otsu_frame, 100, 200)
-            add_trace_img("canny", canny_frame, TRACE_MODE, trace_imgs)
-            # cv2.imshow("Canny", canny_frame)
-            contours, _ = cv2.findContours(canny_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
-            contour_frame = np.zeros(shape=(blur_frame.shape[0], blur_frame.shape[1]), dtype = np.uint8)
+            _, processed_frame = cv2.threshold(processed_frame, 0., 255., cv2.THRESH_OTSU)
+            add_trace_img("gray_otsu", processed_frame, TRACE_MODE, trace_imgs)
+            # cv2.imshow("gray_otsu_frame", processed_frame)
+            processed_frame = cv2.Canny(processed_frame, 100, 200)
+            add_trace_img("canny", processed_frame, TRACE_MODE, trace_imgs)
+            # cv2.imshow("Canny", processed_frame)
+            contours, _ = cv2.findContours(processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
+            contour_frame = np.zeros(shape=(processed_frame.shape[0], processed_frame.shape[1]), dtype = np.uint8)
             maxidx = getMaxContourIndex(contours)
             cv2.drawContours(contour_frame, contours = contours, contourIdx = maxidx, color=255, thickness=1)
             max_contour : np.ndarray = contours[maxidx]
             if max_contour.shape[1] == 1:
                 max_contour = max_contour.squeeze(1)
-            # cv2.imshow("contour_frame", contour_frame)
             add_trace_img("contour", contour_frame, TRACE_MODE, trace_imgs)
             corners : np.ndarray = cv2.goodFeaturesToTrack(contour_frame, 30, 0.1, int(ROI_SIDE_LENGTH / 9), blockSize = 3)
             corners = corners.astype(np.int32)
@@ -175,7 +173,7 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
                     cv2.circle(select_pic, pt, 3, (3, 219, 252), thickness = -1)
                 add_trace_img('select', select_pic, TRACE_MODE, trace_imgs)
                 # 開始映射轉換
-                project_point = np.array([[0, 0],[736, 0],[0, 736],[736, 736]])
+                project_point = np.array([[0, 0],[728, 0],[0, 728],[728, 728]])
                 M = cv2.getPerspectiveTransform(selected_pts.astype(np.float32), project_point.astype(np.float32))
                 result_img = cv2.warpPerspective(crop_frame, M, (736, 736))
                 add_trace_img("result", result_img, TRACE_MODE, trace_imgs)
@@ -200,4 +198,4 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
             break
     cap.release()
     
-    return result_img[18:-10, 18:-10, :], trace_imgs
+    return result_img, trace_imgs

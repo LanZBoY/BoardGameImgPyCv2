@@ -9,8 +9,8 @@ max_0_thr = 255
 max_1_thr = 255
 max_2_thr = 255
 
-src = cv2.imread("space_result.jpg")
-src = cv2.cvtColor(src, cv2.COLOR_BGR2HSV_FULL)
+src = cv2.imread("result.jpg")
+# src = cv2.cvtColor(src, cv2.COLOR_BGR2HSV_FULL)
 
 def change_min_0(val):
     global min_0_thr
@@ -60,6 +60,7 @@ RED_DETECT HSV
 GREEN_DETECT HSV
  G_H = [40 - 100]
 """
+cv2.imshow('src', src)
 cv2.createTrackbar('min_0_thr','ControlPannel', 0, 255, change_min_0)
 cv2.createTrackbar('max_0_thr','ControlPannel', 0, 255, change_max_0)
 cv2.createTrackbar('min_1_thr','ControlPannel', 0, 255, change_min_1)

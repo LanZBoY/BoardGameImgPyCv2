@@ -1,5 +1,4 @@
 import cv2
-import os
 import numpy as np
 
 def getBetterChessCorners(corners : np.ndarray):
@@ -173,7 +172,7 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
                     cv2.circle(select_pic, pt, 3, (3, 219, 252), thickness = -1)
                 add_trace_img('select', select_pic, TRACE_MODE, trace_imgs)
                 # 開始映射轉換
-                project_point = np.array([[0, 0],[728, 0],[0, 728],[728, 728]])
+                project_point = np.array([[0, 0],[736, 0],[0, 736],[736, 736]])
                 M = cv2.getPerspectiveTransform(selected_pts.astype(np.float32), project_point.astype(np.float32))
                 result_img = cv2.warpPerspective(crop_frame, M, (736, 736))
                 add_trace_img("result", result_img, TRACE_MODE, trace_imgs)
@@ -199,3 +198,150 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
     cap.release()
     
     return result_img, trace_imgs
+
+# high-level function
+def get_block(mat, x, y):
+    return mat[y * 100 : (y * 100) + 100, x * 100 : (x * 100) + 100]
+
+def set_block(mat, x, y, pattern):
+    try:
+        mat[y * 100 : (y * 100) + 100, x * 100 : (x * 100) + 100] = pattern
+    except:
+        pass
+
+def get_road(array, road_type):
+    if array[0] and array[1] and array[2] and array[3]:
+        return road_type['BLACK']
+    elif array[0] and array[1] and ~array[2] and ~array[3]:
+        return road_type['UP_RIGHT']
+    elif ~array[0] and array[1] and array[2] and ~array[3]:
+        return road_type['RIGHT_DOWN']
+    elif ~array[0] and ~array[1] and array[2] and array[3]:
+        return road_type['DOWN_LEFT']
+    elif array[0] and ~array[1] and ~array[2] and array[3]:
+        return road_type['UP_LEFT']
+    elif array[0] and ~array[1] and array[2] and ~array[3]:
+        return road_type['VERTICAL']
+    elif ~array[0] and array[1] and ~array[2] and array[3]:
+        return road_type['HORIZON']
+    return road_type['UNPROCESS']
+
+def fill_special_road(detect_result : np.ndarray, color_detect : np.ndarray, perfect_pattern:np.ndarray, road_type : int, thr : float):
+    compared_pattern = perfect_pattern.copy()
+    for i in range(7):
+        for j in range(7):
+            if detect_result[j, i] != -1:
+                continue
+            detect = get_block(color_detect, i, j)
+            score = np.count_nonzero(detect) / np.count_nonzero(compared_pattern)
+            if score >= thr:
+                detect_result[j, i] = road_type
+
+def fill_black_road(detect_result : np.ndarray, black_detect : np.ndarray, perfect_pattern:np.ndarray, road_type, thr:float):
+    compare_pattern = perfect_pattern[5:-5, 5:-5].copy()
+    for i in range(7):
+        for j in range(7):
+            if detect_result[j, i] != -1:
+                continue
+            detect = get_block(black_detect, i, j)
+            detect = detect[5:-5, 5:-5]
+            SCAN_HEIGHT = 33
+            SCAN_HALF_WIDTH = int(detect.shape[1] / 2)
+            path_score = np.array([0, 0, 0, 0], dtype=np.float32)
+            # UP
+            START_X = int(detect.shape[1] / 2) - SCAN_HALF_WIDTH
+            START_Y = 0
+            UP = detect[START_Y :  START_Y + SCAN_HEIGHT, START_X : START_X + 2 * SCAN_HALF_WIDTH]
+            P_UP = compare_pattern[START_Y :  START_Y + SCAN_HEIGHT, START_X : START_X + 2 * SCAN_HALF_WIDTH]
+            path_score[0] = min(1, np.count_nonzero(UP) / np.count_nonzero(P_UP))
+            # RIGHT
+            START_X = detect.shape[1] - SCAN_HEIGHT
+            START_Y = int(detect.shape[0] / 2) - SCAN_HALF_WIDTH
+            RIGHT = detect[START_Y :  START_Y + 2 * SCAN_HALF_WIDTH, START_X : START_X + SCAN_HEIGHT]
+            P_RIGHT = compare_pattern[START_Y :  START_Y + 2 * SCAN_HALF_WIDTH, START_X : START_X + SCAN_HEIGHT]
+            path_score[1] = min(1, np.count_nonzero(RIGHT) / np.count_nonzero(P_RIGHT))
+            # DOWN
+            START_X = int(detect.shape[1] / 2) - SCAN_HALF_WIDTH
+            START_Y = detect.shape[1] - SCAN_HEIGHT
+            DOWN = detect[START_Y :  START_Y + SCAN_HEIGHT, START_X : START_X + 2 * SCAN_HALF_WIDTH]
+            P_DOWN = compare_pattern[START_Y :  START_Y + SCAN_HEIGHT, START_X : START_X + 2 * SCAN_HALF_WIDTH]
+            path_score[2] = min(1, np.count_nonzero(DOWN) / np.count_nonzero(P_DOWN))
+            # LEFT
+            START_X = 0
+            START_Y = int(detect.shape[0] / 2) - SCAN_HALF_WIDTH
+            LEFT = detect[START_Y :  START_Y + 2 * SCAN_HALF_WIDTH, START_X : START_X + SCAN_HEIGHT]
+            P_LEFT = compare_pattern[START_Y :  START_Y + 2 * SCAN_HALF_WIDTH, START_X : START_X + SCAN_HEIGHT]
+            path_score[3] = min(1, np.count_nonzero(LEFT) / np.count_nonzero(P_LEFT))
+            road = get_road((path_score >= thr), road_type = road_type)
+            if road == road_type['UNPROCESS']:
+                reassign = np.array([False, False, False, False])
+                reassign[path_score.argsort()[:2]] = True
+                road = get_road(reassign, road_type = road_type)
+            
+            detect_result[j, i] = road
+
+def fill_blank_road(detect_result : np.ndarray, blank_detect : np.ndarray, road_type : int, thr : float):
+       for i in range(7):
+            for j in range(7):
+                if detect_result[j, i] != -1:
+                    continue
+                detect = get_block(blank_detect, i, j)
+                detect = detect[10:-10, 10:-10]
+                score = np.count_nonzero(detect) / (detect.shape[0] * detect.shape[1])
+                if score >= thr:
+                    detect_result[j, i] = road_type
+
+
+def detect_penguin(bgr, perfect_pattern, road_type):
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV_FULL)
+    detect_result = np.zeros(shape=(7, 7), dtype=np.int8)
+    detect_result.fill(-1)
+    blank_detect = cv2.inRange(hsv, np.array([75, 0, 125]), np.array([255, 127, 255]))
+    fill_blank_road(detect_result, blank_detect, road_type['BLANK'], .95)
+
+    low_red_detect = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([50, 255, 255]))
+    high_red_detect = cv2.inRange(hsv, np.array([235, 0, 0]), np.array([255, 255, 255]))
+    red_detect = low_red_detect | high_red_detect
+    fill_special_road(detect_result, red_detect, perfect_pattern, road_type['RED'], 0.8)
+
+    green_detect = cv2.inRange(bgr, np.array([0, 139, 80]), np.array([130, 255, 255]))
+    fill_special_road(detect_result, green_detect, perfect_pattern, road_type['GREEN'], 0.5)
+
+    blue_detect = cv2.inRange(bgr, np.array([60, 45, 0]), np.array([155, 135, 70]))
+    fill_special_road(detect_result, blue_detect, perfect_pattern, road_type['BLUE'], 0.9)
+    black_hsv_detect = cv2.inRange(hsv, np.array([0,0,0]), np.array([255, 255, 75]))
+    black_bgr_detect = cv2.inRange(bgr, np.array([0,0,0]), np.array([75,60,50]))
+    black_detect = black_hsv_detect | black_bgr_detect
+    fill_black_road(detect_result, black_detect, perfect_pattern, road_type, thr=0.3)
+    return detect_result
+
+def detect_space(bgr, perfect_pattern, road_type):
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV_FULL)
+    detect_result = np.zeros(shape=(7, 7), dtype=np.int8)
+    detect_result.fill(-1)
+    blank_detect = cv2.inRange(bgr, np.array([70, 75, 60]), np.array([255, 255, 255]))
+    cv2.imshow('sample', blank_detect)
+    cv2.waitKey(0)
+    fill_blank_road(detect_result, blank_detect, road_type['BLANK'], .95)
+
+    blue_detect = cv2.inRange(bgr, np.array([140, 0 ,0]), np.array([255, 255, 255])) & cv2.inRange(hsv, np.array([147, 0 ,0]), np.array([168, 255, 255]))
+    cv2.imshow('sample', blue_detect)
+    cv2.waitKey(0)
+    fill_special_road(detect_result, blue_detect, perfect_pattern, road_type['BLUE'], .5)
+
+    red_detect = cv2.inRange(bgr, np.array([0, 0 ,170]), np.array([160, 160, 255]))
+    cv2.imshow('sample', red_detect)
+    cv2.waitKey(0)
+    fill_special_road(detect_result, red_detect, perfect_pattern, road_type['RED'], .5)
+
+    green_detect = cv2.inRange(bgr, np.array([0, 135 ,0]), np.array([120, 255, 170]))
+    cv2.imshow('sample', green_detect)
+    cv2.waitKey(0)
+    fill_special_road(detect_result, green_detect, perfect_pattern, road_type['GREEN'], .5)
+
+    black_detect = cv2.inRange(bgr, np.array([54, 66, 61]), np.array([146, 203, 146])) & cv2.inRange(hsv, np.array([0, 0, 65]), np.array([255, 50, 255]))
+    cv2.imshow('sample', black_detect)
+    cv2.waitKey(0)
+    fill_black_road(detect_result, black_detect, perfect_pattern, road_type, thr = 0.7)
+
+    return detect_result

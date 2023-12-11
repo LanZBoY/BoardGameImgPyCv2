@@ -3,8 +3,8 @@ import numpy as np
 from cvutills import *
 
 root = './procedure_img'
-ROI_SIDE_LENGTH = 600
-RESOLUTION = (1280, 720)
+ROI_SIDE_LENGTH = 500
+RESOLUTION = (800, 600)
 N_FRAME = 1 # 每N禎 偵測一次
 
 cap = cv2.VideoCapture(0)
@@ -13,9 +13,10 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-print(f'Res = {(width, height)}')
+print(f'Resolution = {(width, height)}')
 
 start_pt = (int((width - ROI_SIDE_LENGTH) / 2), int((height - ROI_SIDE_LENGTH) / 2 ))
+
 end_pt = (int((width + ROI_SIDE_LENGTH) / 2), int((height + ROI_SIDE_LENGTH) / 2))
 
 goodTracked = False
@@ -27,7 +28,9 @@ while(True):
     roi_frame = frame.copy()
     
     cv2.rectangle(roi_frame, start_pt , end_pt , color=(0, 0, 255))
+
     if (not goodTracked) and detectSignal and (current_frame == 0):
+
         crop_frame = frame[start_pt[1] - 10 : end_pt[1] + 10, start_pt[0] - 10 : end_pt[0] + 10, :].copy()
         blur_frame = cv2.medianBlur(crop_frame, 7)
         # cv2.imshow('blur', blur_frame)
@@ -36,9 +39,9 @@ while(True):
         hsv_gray_frame = cv2.medianBlur(hsv_gray_frame, 7)
         # cv2.imshow('hsv_gray_frame', hsv_gray_frame)
         _, gray_otsu_frame = cv2.threshold(hsv_gray_frame, 0., 255., cv2.THRESH_OTSU)
-        cv2.imshow("gray_otsu_frame", gray_otsu_frame)
+        # cv2.imshow("gray_otsu_frame", gray_otsu_frame)
         canny_frame = cv2.Canny(gray_otsu_frame, 100, 200)
-        cv2.imshow("Canny", canny_frame)
+        # cv2.imshow("Canny", canny_frame)
         contours, _ = cv2.findContours(canny_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
         contour_frame = np.zeros(shape=(blur_frame.shape[0], blur_frame.shape[1]), dtype = np.uint8)
         maxidx = getMaxContourIndex(contours)

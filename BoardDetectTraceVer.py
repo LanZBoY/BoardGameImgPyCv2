@@ -53,7 +53,7 @@ ROI_SIDE_LENGTH = 600
 
 if TEST_MODE == 0:
     bgr, trace_imgs = capture_roi_frame(TRACE_MODE, SAVE_PATH, ROI_SIDE_LENGTH, (1280, 720), version=VERSION)
-    cv2.destroyAllWindows()
+
 elif TEST_MODE == 1:
     if VERSION == 'space':
         bgr = cv2.imread('space_result.jpg')
@@ -81,6 +81,15 @@ cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 project_on_board(detect_result, board)
+
 cv2.imshow("Result", board)
+
+if TRACE_MODE:
+    trace_imgs : dict
+    for key, array in trace_imgs.items():
+        print(f"Writing to ./procedure_img/{key}.jpg")
+        cv2.imwrite(f'./procedure_img/{key}.jpg', array)
+    cv2.imwrite(f'./procedure_img/final_result.jpg', board)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()

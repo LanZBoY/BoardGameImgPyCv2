@@ -118,6 +118,7 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     print(f'Res = {(width, height)}')
+
     start_pt = (int((width - ROI_SIDE_LENGTH) / 2), int((height - ROI_SIDE_LENGTH) / 2 ))
     end_pt = (int((width + ROI_SIDE_LENGTH) / 2), int((height + ROI_SIDE_LENGTH) / 2))
 
@@ -141,13 +142,10 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
             add_trace_img("hsv_gray", processed_frame, TRACE_MODE, trace_imgs)
             processed_frame = cv2.medianBlur(processed_frame, 7)
             add_trace_img("hsv_gray_median", processed_frame, TRACE_MODE, trace_imgs)
-            # cv2.imshow('hsv_gray_frame', hsv_gray_frame)
             _, processed_frame = cv2.threshold(processed_frame, 0., 255., cv2.THRESH_OTSU)
             add_trace_img("gray_otsu", processed_frame, TRACE_MODE, trace_imgs)
-            # cv2.imshow("gray_otsu_frame", processed_frame)
             processed_frame = cv2.Canny(processed_frame, 100, 200)
             add_trace_img("canny", processed_frame, TRACE_MODE, trace_imgs)
-            # cv2.imshow("Canny", processed_frame)
             contours, _ = cv2.findContours(processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #(x, y)
             contour_frame = np.zeros(shape=(processed_frame.shape[0], processed_frame.shape[1]), dtype = np.uint8)
             maxidx = getMaxContourIndex(contours)
@@ -163,7 +161,6 @@ def capture_roi_frame(TRACE_MODE = False, SAVE_PATH = './procedure_img', ROI_SID
             corner_frame = crop_frame.copy()
             for pt in corners:
                 cv2.circle(corner_frame, pt, 3, (3, 219, 252), thickness = -1)
-            # cv2.imshow("corner_frame", corner_frame)
             add_trace_img("corner", corner_frame, TRACE_MODE, trace_imgs)
             selected_pts = getBetterChessCorners(corners=corners)
             if len(selected_pts) != 0:

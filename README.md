@@ -76,7 +76,7 @@
 
 映射轉換
 <div>
-  <img src = "https://github.com/LanZBoY/BoardGameImgPyCv2/blob/master/procedure_img/result.jpg">
+  <img src = "./procedure_img/result.jpg">
 </div>
 
 最後輸出結果圖，以便在棋盤辨識時使用

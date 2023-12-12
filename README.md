@@ -1,4 +1,4 @@
-# BoardGameImgPyCv2 Gogokids 程式邏輯思維桌遊
+# BoardGameImgPyCv2 for Gogokids 程式邏輯思維桌遊
 
 本專案為提供Gogokids桌遊的辨識結果，所寫出來的工具
 

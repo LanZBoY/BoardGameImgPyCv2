@@ -5,3 +5,4 @@
 共有兩個版本
 1. Gogokids unity版本 - 可在IOS跟Android平台執行
 2. 開發版本 - 為unity版本提供可行性的影像處理方案，開發語言為python 使用 OpenCV
+
